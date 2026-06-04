@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Quản lý Học bổng - Ban Quản Lý</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --dark-slate: #3498db; /* Đổi thành màu xanh dương bạn muốn */
+            --hover-blue: #2980b9; /* Màu xanh đậm hơn một chút khi click/hover */
+            --light-slate: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--light-slate); margin: 0; padding: 0; overflow: hidden; }
+        
+        /* Bố cục Grid tổng */
+        .app-container { display: grid; grid-template-columns: var(--sidebar-width) 1fr; grid-template-rows: var(--topbar-height) 1fr; grid-template-areas: "sidebar topbar" "sidebar content"; height: 100vh; width: 100vw; }
+        
+        /* Sidebar */
+        .app-sidebar { grid-area: sidebar; background-color: var(--dark-slate); color: #cbd5e1; display: flex; flex-direction: column; z-index: 100; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .sidebar-brand { height: var(--topbar-height); display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid #334155; color: #fff; }
+        .sidebar-menu { flex-grow: 1; padding: 20px 0; list-style: none; margin: 0; }
+        .menu-item a { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; text-decoration: none; transition: all 0.2s ease; margin: 4px 12px; border-radius: 8px; font-weight: 500; cursor: pointer; }
+        .menu-item a:hover, .menu-item.active a { background-color: var(--hover-blue); color: #fff; }
+        .menu-item a i { font-size: 1.2rem; margin-right: 12px; }
+        
+        /* Topbar */
+        .app-topbar { grid-area: topbar; background-color: #fff; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; z-index: 90; }
+        
+        /* Main Content & SPA Screens */
+        .app-content { grid-area: content; padding: 24px; overflow-y: auto; background-color: var(--light-slate); }
+        .screen { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Các style tái sử dụng cho Card, Table, Utilities */
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.03); border-radius: 12px; }
+        .card-stat { transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .card-menu { transition: all 0.3s; height: 100%; cursor: pointer; }
+        .card-menu:hover { transform: translateY(-5px); box-shadow: 0 8px 24px rgba(0,0,0,.08); border-left: 5px solid #0d6efd; }
+        .icon-box { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .table th { background-color: #f8f9fa; color: #495057; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+        .status-active { background-color: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;}
+        .progress { height: 10px; border-radius: 5px; }
+        .parameter-badge { font-family: monospace; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <h5 class="fw-bold mb-0 text-white"><i class="bi bi-shield-check me-2 text-info"></i>Hệ thống quản lý học bổng HUMG</h5>
+            </div>
+            <ul class="sidebar-menu" id="mainMenu">
+                <li class="menu-item active"><a onclick="switchScreen('dashboard', 'Trang chủ chính', this)"><i class="bi bi-speedometer2"></i>Trang chủ chính</a></li>
+                <li class="menu-item"><a onclick="switchScreen('danh-muc', 'Danh mục quỹ', this)"><i class="bi bi-wallet2"></i>Danh mục quỹ</a></li>
+                <li class="menu-item"><a onclick="switchScreen('phan-bo', 'Phân bổ ngân sách', this)"><i class="bi bi-diagram-3"></i>Phân bổ ngân sách</a></li>
+                <li class="menu-item"><a onclick="switchScreen('uu-tien', 'Tiêu chí đối tượng', this)"><i class="bi bi-people"></i>Tiêu chí đối tượng</a></li>
+                <li class="menu-item"><a onclick="switchScreen('hoc-tap', 'Tiêu chí học thuật', this)"><i class="bi bi-sliders"></i>Tiêu chí học thuật</a></li>
+            </ul>
+        </aside>
+
+        <header class="app-topbar">
+            <div>
+                <h4 class="fw-bold text-dark mb-0" id="dynamic-title">Trang chủ chính</h4>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary px-3 py-2 me-3"><i class="bi bi-calendar3 me-1"></i> Năm học: 2026</span>
+                <div class="d-flex align-items-center border-start ps-3">
+                    <div class="text-end me-2">
+                        <small class="text-muted d-block" style="font-size: 0.75rem;">Quyền hạn</small>
+                        <span class="fw-semibold text-dark" style="font-size: 0.85rem;">Cán Bộ Ban Quản Lý</span>
+                    </div>
+                    <div class="bg-light p-2 rounded-circle text-secondary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-person-circle fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-content">
+            
+            <div id="dashboard" class="screen active">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom bg-white p-3 rounded shadow-sm">
+                    <div>
+                        <h4 class="fw-bold text-gray-800 mb-0">Tổng quan hệ thống cấu hình</h4>
+                        <small class="text-muted">Chào mừng quay trở lại hệ thống quản trị dữ liệu học bổng</small>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><div class="card card-stat bg-white p-3"><div class="d-flex justify-content-between align-items-center"><div><small class="text-muted fw-semibold text-uppercase">Tổng nguồn quỹ</small><h3 class="fw-bold text-dark mt-1 mb-0">02 Quỹ</h3></div><div class="icon-box bg-primary-subtle text-primary"><i class="bi bi-wallet2 fs-4"></i></div></div></div></div>
+                    <div class="col-md-3"><div class="card card-stat bg-white p-3"><div class="d-flex justify-content-between align-items-center"><div><small class="text-muted fw-semibold text-uppercase">Tổng ngân sách</small><h3 class="fw-bold text-dark mt-1 mb-0">2.5 Tỷ</h3></div><div class="icon-box bg-success-subtle text-success"><i class="bi bi-cash-coin fs-4"></i></div></div></div></div>
+                    <div class="col-md-3"><div class="card card-stat bg-white p-3"><div class="d-flex justify-content-between align-items-center"><div><small class="text-muted fw-semibold text-uppercase">Nhóm đối tượng</small><h3 class="fw-bold text-dark mt-1 mb-0">03 Nhóm</h3></div><div class="icon-box bg-warning-subtle text-warning"><i class="bi bi-people fs-4"></i></div></div></div></div>
+                    <div class="col-md-3"><div class="card card-stat bg-white p-3"><div class="d-flex justify-content-between align-items-center"><div><small class="text-muted fw-semibold text-uppercase">Bộ quy tắc học tập</small><h3 class="fw-bold text-dark mt-1 mb-0">02 Bộ</h3></div><div class="icon-box bg-info-subtle text-info"><i class="bi bi-sliders fs-4"></i></div></div></div></div>
+                </div>
+
+                <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-grid-fill me-2"></i>Lựa chọn phân hệ chức năng xử lý nghiệp vụ</h5>
+                <div class="row g-4">
+                    <div class="col-md-6 col-xl-3">
+                        <div class="card card-menu bg-white" onclick="switchScreen('danh-muc', 'Danh mục quỹ', document.querySelectorAll('.menu-item')[1].querySelector('a'))">
+                            <div class="card-body d-flex flex-column p-4"><div class="icon-box bg-primary text-white mb-3 shadow-sm"><i class="bi bi-wallet2 fs-4"></i></div><h5 class="fw-bold card-title">Danh mục các quỹ</h5><p class="text-muted small flex-grow-1">Quản lý danh sách, thêm mới, điều chỉnh thông tin hoặc đóng/xóa các nguồn quỹ học bổng theo từng học kỳ.</p><span class="btn btn-sm btn-outline-primary mt-3 w-100">Truy cập chức năng <i class="bi bi-arrow-right ms-1"></i></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <div class="card card-menu bg-white" onclick="switchScreen('phan-bo', 'Phân bổ ngân sách', document.querySelectorAll('.menu-item')[2].querySelector('a'))">
+                            <div class="card-body d-flex flex-column p-4"><div class="icon-box bg-success text-white mb-3 shadow-sm"><i class="bi bi-diagram-3 fs-4"></i></div><h5 class="fw-bold card-title">Phân bổ học bổng</h5><p class="text-muted small flex-grow-1">Thiết lập định mức chi ngân sách, chia nhỏ hạn mức tiền từ quỹ nguồn về các đơn vị Khoa trực thuộc.</p><span class="btn btn-sm btn-outline-success mt-3 w-100">Truy cập chức năng <i class="bi bi-arrow-right ms-1"></i></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <div class="card card-menu bg-white" onclick="switchScreen('uu-tien', 'Tiêu chí đối tượng', document.querySelectorAll('.menu-item')[3].querySelector('a'))">
+                            <div class="card-body d-flex flex-column p-4"><div class="icon-box bg-warning text-dark mb-3 shadow-sm"><i class="bi bi-people fs-4"></i></div><h5 class="fw-bold card-title">Tiêu chí đối tượng</h5><p class="text-muted small flex-grow-1">Định nghĩa các diện chính sách miễn giảm, đối tượng sinh viên nghèo hoặc diện ưu tiên đặc biệt trong hệ thống.</p><span class="btn btn-sm btn-outline-warning mt-3 w-100">Truy cập chức năng <i class="bi bi-arrow-right ms-1"></i></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <div class="card card-menu bg-white" onclick="switchScreen('hoc-tap', 'Tiêu chí học thuật', document.querySelectorAll('.menu-item')[4].querySelector('a'))">
+                            <div class="card-body d-flex flex-column p-4"><div class="icon-box bg-info text-dark mb-3 shadow-sm"><i class="bi bi-sliders fs-4"></i></div><h5 class="fw-bold card-title">Tiêu chí học tập</h5><p class="text-muted small flex-grow-1">Thiết lập ngưỡng điểm điều kiện học thuật tự động (GPA tối thiểu, Điểm rèn luyện tối thiểu) để chạy lọc dữ liệu.</p><span class="btn btn-sm btn-outline-info mt-3 w-100">Truy cập chức năng <i class="bi bi-arrow-right ms-1"></i></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="danh-muc" class="screen">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0 text-gray-800"><i class="bi bi-wallet2 me-2 text-primary"></i>Danh mục quỹ học bổng</h1>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalQuy"><i class="bi bi-plus-lg me-2"></i>Thêm mới quỹ</button>
+                </div>
+
+                <div class="card mb-4"><div class="card-body"><div class="row g-3">
+                    <div class="col-md-6"><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span><input type="text" class="form-control" placeholder="Tìm kiếm theo mã quỹ hoặc tên quỹ..."></div></div>
+                    <div class="col-md-3"><select class="form-select"><option value="">Tất cả học kỳ</option><option value="HK1-2025-2026">Học kỳ 1 - Năm học 2025-2026</option><option value="HK2-2025-2026">Học kỳ 2 - Năm học 2025-2026</option></select></div>
+                    <div class="col-md-3"><select class="form-select"><option value="">Tất cả trạng thái</option><option value="Hoạt động">Hoạt động</option><option value="Đã đóng">Đã đóng</option></select></div>
+                </div></div></div>
+
+                <div class="card"><div class="card-body p-0"><div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr><th class="ps-4">Mã Quỹ</th><th>Tên Quỹ Học Bổng</th><th class="text-end">Tổng Ngân Sách</th><th class="text-end">Số Dư Hiện Tại</th><th>Người Quản Lý</th><th>Học Kỳ</th><th>Trạng Thái</th><th class="text-center pe-4">Hành động</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-medium ps-4">QHB-KKHT-K68-HK1</td>
+                                <td>Quỹ học bổng khuyến khích học tập K68</td>
+                                <td class="text-end fw-semibold">1,500,000,000đ</td>
+                                <td class="text-end text-success fw-semibold">450,000,000đ</td>
+                                <td>Phòng CTSV</td>
+                                <td>HK1-2025-2026</td>
+                                <td><span class="status-active">Hoạt động</span></td>
+                                <td class="text-center pe-4"><button class="btn btn-sm btn-outline-secondary me-1" title="Sửa"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" title="Đóng quỹ"><i class="bi bi-lock"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div></div></div>
+            </div>
+
+            <div id="phan-bo" class="screen">
+                <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-diagram-3 me-2 text-primary"></i>Phân bổ ngân sách quỹ học bổng</h1>
+                
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-white fw-bold py-3 border-bottom-0">Cấu hình nguồn quỹ</div>
+                            <div class="card-body">
+                                <div class="mb-3"><label class="form-label fw-semibold">Chọn Quỹ học bổng nguồn</label><select class="form-select" id="selectQuySource"><option value="QHB01">Quỹ Khuyến Khích Học Tập HK1</option><option value="QHB02">Quỹ Tài Trợ Doanh Nghiệp Phát Triển</option></select></div><hr>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng ngân sách quỹ:</span><span class="fw-bold" id="txtTotalBudget">1,000,000,000đ</span></div>
+                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Đã phân bổ:</span><span class="fw-bold text-primary" id="txtAllocated">650,000,000đ</span></div>
+                                <div class="d-flex justify-content-between mb-3"><span class="text-muted">Còn lại khả dụng:</span><span class="fw-bold text-success" id="txtRemaining">350,000,000đ</span></div>
+                                <div class="progress mb-2"><div class="progress-bar bg-success" style="width: 65%"></div></div>
+                                <small class="text-muted d-block text-center">Đã phân bổ 65% ngân sách gốc</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom-0"><span class="fw-bold">Danh sách định mức phân bổ cho các Khoa</span><span class="badge bg-light text-dark">Hệ thống MySQL</span></div>
+                            <div class="card-body p-0">
+                                <form id="formPhanBo">
+                                    <table class="table table-borderless align-middle mb-0"><thead class="table-light"><tr><th class="ps-4">Mã Khoa</th><th>Tên Đơn Vị/Khoa</th><th style="width: 40%;" class="pe-4 text-end">Số Tiền Phân Bổ (VND)</th></tr></thead>
+                                        <tbody>
+                                            <tr class="border-bottom"><td class="ps-4 text-muted">CNTT</td><td class="fw-semibold">Khoa Công nghệ thông tin</td><td class="pe-4"><input type="number" class="form-control text-end border-dashed" value="300000000" min="0" required name="SoTienPhanBo"></td></tr>
+                                            <tr class="border-bottom"><td class="ps-4 text-muted">CĐT</td><td class="fw-semibold">Khoa Cơ điện tử</td><td class="pe-4"><input type="number" class="form-control text-end" value="200000000" min="0" required name="SoTienPhanBo"></td></tr>
+                                            <tr class="border-bottom"><td class="ps-4 text-muted">MĐC</td><td class="fw-semibold">Khoa Mạng máy tính & Truyền thông</td><td class="pe-4"><input type="number" class="form-control text-end" value="150000000" min="0" required name="SoTienPhanBo"></td></tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="p-3 text-end bg-light border-top rounded-bottom"><button type="button" class="btn btn-secondary me-2">Khôi phục mặc định</button><button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Lưu cấu hình phân bổ</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="uu-tien" class="screen">
+                <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-people me-2 text-primary"></i>Cấu hình đối tượng chính sách & ưu tiên</h1>
+                
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-white fw-bold py-3 border-bottom-0">Thêm đối tượng mới</div>
+                            <div class="card-body">
+                                <form id="formDoiTuong">
+                                    <div class="mb-3"><label class="form-label fw-semibold">Mã Đối Tượng <span class="text-danger">*</span></label><input type="text" class="form-control" name="MaDoiTuong" placeholder="Ví dụ: DTTS, HN" required><div class="form-text">Mã định danh duy nhất trong hệ thống dữ liệu.</div></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Tên Nhóm Đối Tượng Ưu Tiên <span class="text-danger">*</span></label><input type="text" class="form-control" name="Ten" placeholder="Ví dụ: Sinh viên là người dân tộc thiểu số" required></div>
+                                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-square me-1"></i>Thêm vào danh mục</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header bg-white fw-bold py-3 border-bottom-0">Danh mục đối tượng chính sách hệ thống đang áp dụng</div>
+                            <div class="card-body p-0"><div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th class="ps-4" style="width: 25%;">Mã Đối Tượng</th><th>Tên Chi Tiết Diện Đối Tượng</th><th class="text-center pe-4" style="width: 20%;">Hành động</th></tr></thead>
+                                    <tbody>
+                                        <tr class="border-bottom"><td class="ps-4 fw-bold text-primary">HN</td><td>Sinh viên thuộc diện Hộ nghèo quy chuẩn</td><td class="text-center pe-4"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></td></tr>
+                                        <tr class="border-bottom"><td class="ps-4 fw-bold text-primary">DTTS</td><td>Sinh viên vùng sâu vùng xa, dân tộc thiểu số</td><td class="text-center pe-4"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></td></tr>
+                                        <tr class="border-bottom"><td class="ps-4 fw-bold text-primary">KHUYET_TAT</td><td>Sinh viên khuyết tật vượt khó học tập</td><td class="text-center pe-4"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></td></tr>
+                                    </tbody>
+                                </table>
+                            </div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hoc-tap" class="screen">
+                <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-sliders me-2 text-primary"></i>Cấu hình ngưỡng tiêu chí học thuật tối thiểu</h1>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-white fw-bold py-3 border-bottom-0">Thiết lập bộ điều kiện lọc hồ sơ mới</div>
+                    <div class="card-body">
+                        <form id="formTieuChi"><div class="row g-3">
+                            <div class="col-md-4"><label class="form-label fw-semibold">Mã Tiêu Chí <span class="text-danger">*</span></label><input type="text" class="form-control" name="MaTieuChi" placeholder="Ví dụ: TC-XUAT-SAC" required></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Áp dụng cho Quỹ <span class="text-danger">*</span></label><select class="form-select" name="MaQuy" required><option value="QHB01">Quỹ khuyến khích học tập K68</option></select></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Loại Tiêu Chí Học Bổng <span class="text-danger">*</span></label><select class="form-select" name="MaLoai" required><option value="L01">Học bổng Khuyến khích học tập (KKHT)</option><option value="L02">Học bổng trợ cấp khó khăn</option></select></div>
+                            <div class="col-md-3"><label class="form-label fw-semibold">Ngưỡng điểm GPA tối thiểu (Hệ 4) <span class="text-danger">*</span></label><input type="number" class="form-control" name="GPAToiThieu" min="0" max="4.0" step="0.01" placeholder="Ví dụ: 3.60" required></div>
+                            <div class="col-md-3"><label class="form-label fw-semibold">Ngưỡng Điểm Rèn Luyện tối thiểu <span class="text-danger">*</span></label><input type="number" class="form-control" name="DRLToiThieu" min="0" max="100" step="1" placeholder="Ví dụ: 90" required></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Đối tượng áp dụng loại trừ / ưu tiên</label><select class="form-select" name="MaDoiTuong"><option value="">Tất cả sinh viên (Mặc định)</option><option value="HN">Chỉ áp dụng diện Hộ nghèo</option></select></div>
+                            <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-1"></i>Áp dụng</button></div>
+                        </div></form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-white fw-bold py-3 border-bottom-0">Các bộ quy tắc lọc tự động đang hoạt động</div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0 align-middle"><thead class="table-light"><tr><th class="ps-4">Mã Tiêu Chí</th><th>Quỹ Liên Kết</th><th>GPA Tối Thiểu</th><th>ĐRL Tối Thiểu</th><th>Đối Tượng</th><th class="text-center">Xóa quy tắc</th></tr></thead>
+                            <tbody>
+                                <tr><td class="ps-4 fw-semibold text-secondary">TC-KKHT-XS</td><td>Quỹ khuyến khích học tập K68</td><td><span class="badge bg-primary parameter-badge">≥ 3.60</span></td><td><span class="badge bg-info text-dark parameter-badge">≥ 90</span></td><td>Tất cả sinh viên</td><td class="text-center"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></td></tr>
+                                <tr><td class="ps-4 fw-semibold text-secondary">TC-KKHT-G</td><td>Quỹ khuyến khích học tập K68</td><td><span class="badge bg-primary parameter-badge">≥ 3.20</span></td><td><span class="badge bg-info text-dark parameter-badge">≥ 80</span></td><td>Tất cả sinh viên</td><td class="text-center"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div class="modal fade" id="modalQuy" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Thông tin Quỹ học bổng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formQuy">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label fw-semibold">Mã Quỹ <span class="text-danger">*</span></label><input type="text" class="form-control" name="MaQuy" required placeholder="Ví dụ: QHB-KKHT-HK1"></div>
+                            <div class="col-md-6"><label class="form-label fw-semibold">Tên Quỹ Học Bổng <span class="text-danger">*</span></label><input type="text" class="form-control" name="TenQuy" required placeholder="Nhập tên đầy đủ của quỹ"></div>
+                            <div class="col-md-6"><label class="form-label fw-semibold">Tổng Ngân Sách (VND) <span class="text-danger">*</span></label><input type="number" class="form-control" name="TongNganSach" required min="0" step="1000"></div>
+                            <div class="col-md-6"><label class="form-label fw-semibold">Người Quản Lý <span class="text-danger">*</span></label><input type="text" class="form-control" name="NguoiQuanLy" required placeholder="Tên đơn vị/cá nhân phụ trách"></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Học Kỳ <span class="text-danger">*</span></label><select class="form-select" name="MaHocKy" required><option value="">-- Chọn học kỳ --</option><option value="HK1">HK1-2025-2026</option><option value="HK2">HK2-2025-2026</option></select></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Nguồn Quỹ <span class="text-danger">*</span></label><select class="form-select" name="MaNguon" required><option value="">-- Chọn nguồn quỹ --</option><option value="N01">Ngân sách nhà trường</option><option value="N02">Tài trợ từ doanh nghiệp</option></select></div>
+                            <div class="col-md-4"><label class="form-label fw-semibold">Trạng Thái <span class="text-danger">*</span></label><select class="form-select" name="TrangThai" required><option value="Hoạt động">Hoạt động</option><option value="Đã đóng">Đã đóng</option></select></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" form="formQuy" class="btn btn-primary">Lưu dữ liệu</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Hàm chuyển đổi màn hình (SPA)
+        function switchScreen(screenId, titleText, clickedElement) {
+            // 1. Ẩn tất cả các màn hình (.screen)
+            document.querySelectorAll('.screen').forEach(function(screen) {
+                screen.classList.remove('active');
+            });
+            // 2. Hiện màn hình được chọn
+            document.getElementById(screenId).classList.add('active');
+            
+            // 3. Đổi tiêu đề trên Topbar
+            document.getElementById('dynamic-title').innerText = titleText;
+            
+            // 4. Đổi trạng thái 'active' trên Menu Sidebar
+            document.querySelectorAll('.sidebar-menu .menu-item').forEach(function(item) {
+                item.classList.remove('active');
+            });
+            if(clickedElement) {
+                clickedElement.parentElement.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
